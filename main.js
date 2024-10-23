@@ -1,44 +1,100 @@
-// Attach event (click) listeners to each 'game box'
+const Gameboard = (() => {
+    let gameboard = ["", "", "", "", "", "", "", "", ""];
 
-// Initialize the game //
+    const render = () => {
+        let boardHTML = '';
+        gameboard.forEach((square, index) => {
+            boardHTML += `<div class="square" id="square-${index}">${square}</div>`;
+        });
+        document.querySelector('#gameboard').innerHTML = boardHTML;
 
-// Check which gamemode we're playing
+        const squares = document.querySelectorAll('.square');
+        squares.forEach((e) => {
+            e.addEventListener('click', Game.handleClick);
+        });
+    }
+    const update = (indexx, value) => {
+        gameboard[indexx] = value;
+        render();
+    }
 
-// Set win conditions
+    const getGameboard = () => gameboard;
 
-// Determine current player
+    return {render, update, getGameboard};
+})();
 
-// After each move, check win conditions and if not met, set other player as active
-
-// Human vs human, implement easy ai, impossible ai
-
-const form = document.querySelector('#myForm');
-form.addEventListener('submit', (e) => {
-    // prevent page refresh
-    e.preventDefault();
-
-    // initialize form data
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData);
-    document.querySelector('.modal-wrapper').setAttribute('hidden', true);
-    initializeGame(data);
-});
-
-const initialzeVariables = (data) => {
-    data.choice = +data.choice;
-    data.board = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-    data.player1 = 'X';
-    data.player2 = 'O';
-    data.round = 0;
-    data.currentPlayer = 'X';
-    data.gameOver = false;
+const createPlayer = (name, mark) => {
+    return {name, mark};
 }
 
-const initializeGame = (data) => {
-    // Initialize game variables
-    initialzeVariables(data);
-    console.log(data);
-    // Add event listeners to the gameboard
+const Game = (() => {
+    let players = [];
+    let currentPlayerIndex;
+    let gameover;
 
-   
+    const start = () => {
+        players = [
+        createPlayer(document.querySelector('#player1').value, 'X'),
+        createPlayer(document.querySelector('#player2').value, 'O')
+        ];
+        currentPlayerIndex = 0;
+        gameover = false;
+        Gameboard.render();
+    }
+
+    const handleClick = (event) => {
+        let index = parseInt(event.target.id.split('-')[1]);
+        if (Gameboard.getGameboard()[index] !== '') {
+            return;
+        }
+        Gameboard.update(index, players[currentPlayerIndex].mark);
+
+        if (checkForWin(Gameboard.getGameboard(), players[currentPlayerIndex].mark)) {
+            gameover = true;
+            alert(`${players[currentPlayerIndex].name} won!`);
+            
+        } else if (checkForTie(Gameboard.getGameboard())) {
+            gameover = true;
+            alert(`${players[currentPlayerIndex].name} tie!`);
+        };
+
+        currentPlayerIndex = currentPlayerIndex === 0 ? 1 : 0;
+    }
+
+    const restart = () => {
+        for (let i = 0; i < 9; i++) {
+            Gameboard.update(i, '');
+        }
+        Gameboard.render();
+    }
+
+    return {start, handleClick, restart};
+})();
+
+function checkForWin(board) {
+    const winningCombinations = [
+    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+    [0, 4, 8], [2, 4, 6]
+    ]
+    for (let i = 0; i < winningCombinations.length; i++) {
+        const [a, b, c] = winningCombinations[i];
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+            return true;
+        }
+    }
 }
+
+const checkForTie = (board) => {
+    return board.every(cell => cell !== '');
+}
+
+const startBtn = document.querySelector('#start-btn');
+    startBtn.addEventListener('click', () => {
+        Game.start();
+    });
+
+const restartBtn = document.querySelector('#restart-btn');
+restartBtn.addEventListener('click', () => {
+    Game.restart();
+});  
